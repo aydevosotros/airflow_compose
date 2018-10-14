@@ -1,0 +1,103 @@
+version: "3.3"
+services:
+  webserver:
+    build:
+      context: compose/airflow
+#    environment:
+    depends_on:
+      - postgres
+      - scheduler
+    # Configs are not support in docker compose. Uncomment for swarm
+#    configs:
+#      - source: airflow
+#        target: /opt/airflow/airflow.cfg
+#      - source: unittests
+#        target: /opt/airflow/unittests.cfg
+    volumes:
+      - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
+      - ./airflow/unittests.cfg:/opt/airflow/unittests.cfg
+    ports:
+      - 8080:8080
+    command: ["airflow", "webserver"]
+
+  scheduler:
+    build:
+      context: compose/airflow
+    #    environment:
+    depends_on:
+    - flower
+    - worker
+    # Configs are not support in docker compose. Uncomment for swarm
+    #    configs:
+    #      - source: airflow
+    #        target: /opt/airflow/airflow.cfg
+    #      - source: unittests
+    #        target: /opt/airflow/unittests.cfg
+    volumes:
+    - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
+    - ./airflow/unittests.cfg:/opt/airflow/unittests.cfg
+    - ./airflow/dags/:/opt/airflow/dags/
+    command: ["airflow", "scheduler"]
+
+  worker:
+    build:
+      context: compose/airflow
+    depends_on:
+    - postgres
+    - rabbitmq
+    # Configs are not support in docker compose. Uncomment for swarm
+    #    configs:
+    #      - source: airflow
+    #        target: /opt/airflow/airflow.cfg
+    #      - source: unittests
+    #        target: /opt/airflow/unittests.cfg
+    volumes:
+    - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
+    - ./airflow/unittests.cfg:/opt/airflow/unittests.cfg
+    command: ["airflow", "worker"]
+
+  flower:
+    build:
+      context: compose/airflow
+    #    environment:
+    depends_on:
+    - worker
+    - rabbitmq
+    # Configs are not support in docker compose. Uncomment for swarm
+    #    configs:
+    #      - source: airflow
+    #        target: /opt/airflow/airflow.cfg
+    #      - source: unittests
+    #        target: /opt/airflow/unittests.cfg
+    volumes:
+    - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
+    - ./airflow/unittests.cfg:/opt/airflow/unittests.cfg
+    ports:
+    - 5555:5555
+    command: ["airflow", "flower"]
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: airflow
+      RABBITMQ_DEFAULT_PASS: airflow
+      RABBITMQ_DEFAULT_VHOST: airflow
+
+# Configs are not support in docker compose. Uncomment for swarm
+#configs:
+#  airflow:
+#    file: airflow/airflow.cfg
+#  unittests:
+#    file: airflow/unittests.cfg
+
+volumes:
+  postgres_data: {}
