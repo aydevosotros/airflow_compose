@@ -1,4 +1,4 @@
-FROM python:3.6
+FROM python:3.5
 
 # Airflow environment setup
 ENV AIRFLOW_GPL_UNIDECODE=True
